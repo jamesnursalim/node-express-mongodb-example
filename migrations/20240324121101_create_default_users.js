@@ -29,5 +29,5 @@ logger.info('Creating default users');
     logger.error(e);
   } finally {
     process.exit(0);
-  } james hitam
+  }
 })();
