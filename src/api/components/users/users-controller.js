@@ -50,6 +50,22 @@ async function createUser(request, response, next) {
     const name = request.body.name;
     const email = request.body.email;
     const password = request.body.password;
+    const passwordConfirm = request.body.password_confirm;
+    const checkEmails = await usersService.checkEmail(email);
+
+    if (!checkEmails) {
+      throw errorResponder(
+        errorTypes.EMAIL_ALREADY_TAKEN,
+        'Email already exist'
+      );
+    }
+
+    if (password !== passwordConfirm) {
+      throw errorResponder(
+        errorTypes.INVALID_PASSWORD,
+        "Password doesn't match"
+      );
+    }
 
     const success = await usersService.createUser(name, email, password);
     if (!success) {
@@ -77,6 +93,14 @@ async function updateUser(request, response, next) {
     const id = request.params.id;
     const name = request.body.name;
     const email = request.body.email;
+    const checkEmails = await usersService.checkEmail(email);
+
+    if (!checkEmails) {
+      throw errorResponder(
+        errorTypes.EMAIL_ALREADY_TAKEN,
+        'Email already exist'
+      );
+    }
 
     const success = await usersService.updateUser(id, name, email);
     if (!success) {
@@ -87,6 +111,31 @@ async function updateUser(request, response, next) {
     }
 
     return response.status(200).json({ id });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+/**
+ * Change Password
+ */
+async function changePassword(request, response, next) {
+  try {
+    const id = request.params.id;
+    const oldPassword = request.body.oldPassword;
+    const newPassword = request.body.newPassword;
+    const confirmPassword = request.body.confirmPassword;
+
+    const changePass = await usersService.changePassword(
+      id,
+      oldPassword,
+      newPassword,
+      confirmPassword
+    );
+
+    return response
+      .status(200)
+      .json({ message: 'Password changed successfully' });
   } catch (error) {
     return next(error);
   }
@@ -122,5 +171,6 @@ module.exports = {
   getUser,
   createUser,
   updateUser,
+  changePassword,
   deleteUser,
 };
