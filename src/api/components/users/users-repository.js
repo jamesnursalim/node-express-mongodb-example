@@ -1,33 +1,34 @@
 const { User } = require('../../../models');
 
-/**
- * Get a list of users
- * @returns {Promise}
- */
-async function getUsers() {
-  return User.find({});
-}
-
-/**
- * Get user detail
- * @param {string} id - User ID
- * @returns {Promise}
- */
-async function getUser(id) {
-  return User.findById(id);
-}
+const userAttempts = {};
 
 async function getEmail(email) {
   return User.findOne({ email: email });
 }
 
-/**
- * Create new user
- * @param {string} name - Name
- * @param {string} email - Email
- * @param {string} password - Hashed password
- * @returns {Promise}
- */
+function validateLoginAttempt(email, success) {
+  if (success) {
+    delete userAttempts[email];
+  } else {
+    if (userAttempts[email]) {
+      userAttempts[email].attempts++;
+      if (userAttempts[email].attempts >= 5) {
+        throw new Error("403 Forbidden: Too many failed login attempts");
+      }
+    } else {
+      userAttempts[email] = { attempts: 1, lastAttemptTime: Date.now() };
+    }
+  }
+}
+
+async function getUsers() {
+  return User.find({});
+}
+
+async function getUser(id) {
+  return User.findById(id);
+}
+
 async function createUser(name, email, password) {
   return User.create({
     name,
@@ -36,13 +37,6 @@ async function createUser(name, email, password) {
   });
 }
 
-/**
- * Update existing user
- * @param {string} id - User ID
- * @param {string} name - Name
- * @param {string} email - Email
- * @returns {Promise}
- */
 async function updateUser(id, name, email) {
   return User.updateOne(
     {
@@ -61,21 +55,17 @@ async function updatePassword(id, newPassword) {
   await User.findByIdAndUpdate(id, { password: newPassword });
 }
 
-/**
- * Delete a user
- * @param {string} id - User ID
- * @returns {Promise}
- */
 async function deleteUser(id) {
   return User.deleteOne({ _id: id });
 }
 
 module.exports = {
-  getUsers,
-  getUser,
   getEmail,
+  getUser,
   createUser,
   updateUser,
   updatePassword,
   deleteUser,
+  validateLoginAttempt,
+  getUsers,
 };
